@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Yassin's League - friends-only tournament app with NO Firebase Authentication.
+//
+// These rules deliberately allow open read/write on the single active league,
+// because the app has no signed-in users. The admin password is a client-side
+// convenience only: anyone who knows the project id can write to this data.
+// Do not store anything private here. See README.md ("Security, honestly").
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The one active league, its players, matchdays and knockout bracket.
+    match /leagues/{leagueId} {
+      allow read, write: if true;
+
+      match /{document=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Nothing else in the project is reachable from this app.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
