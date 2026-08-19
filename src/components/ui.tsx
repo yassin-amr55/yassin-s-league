@@ -197,26 +197,39 @@ export function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Held in a ref so the focus effect below can depend on `open` alone.
+  // Callers pass inline arrow functions, whose identity changes on every render
+  // of the parent - keeping `onClose` in the dependency list would re-run the
+  // effect on every keystroke and steal focus back out of the field.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   // Escape closes; focus moves into the dialog so keyboard users are not
-  // stranded behind it.
+  // stranded behind it. This runs once per opening, never while typing.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     const previous = document.activeElement as HTMLElement | null;
     const timer = window.setTimeout(() => {
-      panelRef.current?.querySelector<HTMLElement>(
-        "input, button, [tabindex]:not([tabindex='-1'])",
-      )?.focus();
+      const panel = panelRef.current;
+      if (!panel || panel.contains(document.activeElement)) return;
+      // Prefer a real field over the close button, which comes first in the DOM.
+      const target =
+        panel.querySelector<HTMLElement>("input:not([type='hidden']), textarea, select") ??
+        panel.querySelector<HTMLElement>("button, [tabindex]:not([tabindex='-1'])");
+      target?.focus();
     }, 30);
     return () => {
       document.removeEventListener("keydown", onKey);
       window.clearTimeout(timer);
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

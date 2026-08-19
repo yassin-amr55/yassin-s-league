@@ -53,11 +53,15 @@ export function SetupPanel({ initialNames }: { initialNames: string[] }) {
       return;
     }
     setNames((prev) => [...prev, ""]);
-    // Keep the newest input in view once it has rendered.
+    // Keep the newest input in view once it has rendered. Each input sits in its
+    // own wrapper, so ":last-of-type" would match the *first* one - take the
+    // last of the full list instead.
     window.setTimeout(() => {
       const list = listRef.current;
-      if (list) list.scrollTop = list.scrollHeight;
-      list?.querySelector<HTMLInputElement>("input:last-of-type")?.focus();
+      if (!list) return;
+      list.scrollTop = list.scrollHeight;
+      const inputs = list.querySelectorAll<HTMLInputElement>("input");
+      inputs[inputs.length - 1]?.focus();
     }, 20);
   }
 
